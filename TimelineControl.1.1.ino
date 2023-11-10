@@ -1,99 +1,107 @@
-// Управление клапанами по сигналам с датчиков
-// версия 1.1 от 20.07.2020 
-// (Добавлены альтернативные действия для нескольких нажатий кнопки 
-// и пропорциональная зависимость интервала импульса от зачений аналогового входа
-
-// Варианты подключения клапанов. При управлении логическим 0 - поменять местами
-#define StateOn HIGH		// Включение клапанов логическим 1 (подача 5 Вольт на пин)
-#define StateOff LOW		// Выключение клапанов логическим 0 (подача 0 Вольт на пин)
+// Pulse generation system according to the configuration specified by the Gantt chart
+// version 1.1 от 20.07.2020 
 
 
-void ValveStatus(); // Функция отображения клапанов
+// Valve connection options. When controlling logical 0 - swap places
+#define StateOn HIGH		// Turning on the valves with logical 1 (supplying 5 Volts to the pin)
+#define StateOff LOW		// Turning off the valves with logical 0 (supplying 0 Volts to the pin)
 
-#include "Impulse.h"	// Функционалуправления импулсами в отдельном файле (поместить его в ту-же папку)
-// Определяем требуемые последовательности импульсов клапанов
-// Для импульсов в единицы мс желательно отключать вывод в консоль (иначе это может вызывать задержки)
+
+void ValveStatus(); // Valve status display function
+
+#include "Impulse.h"	// Pulse control library
+
+
+// Determine the required valve pulse sequences according Gantt chart
+// For pulses in units of ms, it is advisable to disable output to the console (otherwise it may cause delays)
+// (Number of PIN, 	delay before start in ms,	pulse duration in ms,	pause between pulses in ms, 	quantity of pulses) 	
 Impulse ValveImpulse[]={
-	            //Клапан1 воздушний цилиндир. Импульсы подаются на 2 пин, начало через 2650 мс после пуска,2000 длина импульса,0 пауза между импулисами,
- 				// количество 1шт
- 				//Impulse(2,10000,10,0,0),
+				// Example test ptogram (testing the vehicle fuel system on a stand)
+	           // Valve 1 - air cylinder. Pulses are supplied to 2 pins, start 10080ms after run, 1000ms pulse length, 1000ms pause between pulses, 100 pulses
  				Impulse(2,10080,1000,1000,100),
-				//Impulse(2,46500,15,0,1),
-				// Еталон 2
- 				//Impulse(3,4000,39,500,70),//390мс дорівнюе 1мл
+
+				// Benchmark pulse sequence 2
+				// Pulses are supplied to 3rd pin, start 4000 ms after run, 20ms pulse length, 300ms pause between pulses, 150 pulses
+
  				Impulse(3,4000,20,300,150),
-				//Impulse(3,4000,780,0,1),
-				//Продувка 3
+
+				// Blowing process
+				// Pulses are supplied to 4rd pin, start 1300 ms after run, 6ms pulse length, 0ms pause between pulses, 1 pulse
+				// Pulses are supplied to 4rd pin, start 65000 ms after run, 6ms pulse length, 0ms pause between pulses, 1 pulse
 				Impulse(4,1300,6,0,1),
 				Impulse(4,65000,6,0,1),
-				//Сброс 4
+				
+				//Pressure release
+				// Pulses are supplied to 5th pin, start 10 ms after run, 3000ms pulse length, 0ms pause between pulses, 1 pulse
+				// Pulses are supplied to 5th pin, start 65000 ms after run, 3000ms pulse length, 0ms pause between pulses, 1 pulse
 				Impulse(5,10,3000,0,1),
 				Impulse(5,65000,3000,0,1),
-				//Заповнення 5
+				
+				//Filling 
+				// Pulses are supplied to 6th pin, start 10 ms after run, 7000ms pulse length, 0ms pause between pulses, 1 pulse
+				// Pulses are supplied to 6th pin, start 61000 ms after run, 15000ms pulse length, 0ms pause between pulses, 1 pulse
 				//Impulse(6,3,10,0,1),
 				Impulse(6,10,7000,0,1),
 				Impulse(6,61000,15000,0,1),
-				
 				};
-const byte ImpulseTypes=sizeof(ValveImpulse)/sizeof(Impulse);  // Количество последовательностей импульсов
+const byte ImpulseTypes=sizeof(ValveImpulse)/sizeof(Impulse);  //Number of pulse sequences
 
-unsigned long maxCyclesDurations=200000; // Максимальная длительность все циклов, в мс. При превышении - останов
+unsigned long maxCyclesDurations=200000; // Maximum duration of all cycles, in ms. If exceeded - stop
 
 
 unsigned long cycleCount = 0;	
 unsigned long cycleMillis = 0;	
 			
-const byte SensorsNumber=3;	// Количество датчиков
+const byte SensorsNumber=3;	// Number of sensors
 
-// Обозначаем пины подключения датчиков (диапазон 0..5 Вольт соответсвует показаниям 0..1024)
-byte SENSORS[]={A0, A1, A2}; 	//Подключение сенсоров - пины A0, A1, A2
-double SensorRatio[]= {10,100,100}; //Коффициенты перевода значений датчиков (0..5 Вольт) в реальные значения
-									// Значение 100 соответсвует SensorValue=100 при подаче 5 вольт, 66 - при 3,3В и т.д.
-double SensorValue[]= {0,0,0}; //Текущие показания датчиков
+// Designation of the pins for connecting the sensors (the range of 0..5 Volts corresponds to readings of 0..1024)
+byte SENSORS[]={A0, A1, A2}; 			//Connecting sensors - pins A0, A1, A2
+double SensorRatio[]= {10,100,100}; 	//Coefficients for converting sensor values (0..5 Volts) into real values
+										//A value of 100 corresponds to SensorValue=100 when 5 volts are applied, 66 when 3.3V is applied, etc.
+double SensorValue[]= {0,0,0}; 			//Current sensor readings
 
-bool SensorIntoImpulse=false;	// режим влияния значения датчика на длительность импульса, по умолчанию отключен
-byte SensorIntoImpulse_Input=0;	// Какой из аналоговых входов будет управлять
-byte SensorIntoImpulse_Number=0;	// Каким из импульсов будет управляться
-int ImpulseTimeByDefault=50000;    // Длительность импульса по умолчанию (если не будет зависимости от датчика)
-int ImpulsePauseByDefault=50000;    // Пауза между импульсами по умолчанию (если не будет зависимости от датчика)
-double SensorIntoImpulseX=15000; 	// Коэффициент влияния значения датчика на длительность импульса 
-								// значение датчика берется с учетом SensorRatio 
+bool SensorIntoImpulse=false;			// mode for influencing the sensor value on the pulse duration, disabled by default
+byte SensorIntoImpulse_Input=0;			// Which analog input will control
+byte SensorIntoImpulse_Number=0;		// Which of the impulses will be controlled
+int ImpulseTimeByDefault=50000;   		// Default pulse duration (unless sensor dependent)
+int ImpulsePauseByDefault=50000;  		// Default pause between pulses (unless sensor dependent)
+double SensorIntoImpulseX=15000; 		// Coefficient of influence of the sensor value on the pulse duration
+										// the sensor value is taken  into account according SensorRatio value
 
-// Обозначаем служебыне пины
-const byte WORKING=13;	// Индикация работы - пин 13 (встроенный светодиод)
-const byte RUN=12;		// Подключение кнопки пуска
+// Designation of the servise pins 
+const byte WORKING=13;	// Operation indication - pin 13 (built-in LED)
+const byte RUN=12;		// "Run" button connection
 
 
 
-// Временные задержки
-int SensorsPause=1000;		// Частота опроса датчиков, мс
-int RunButtonPause=100;		// Частота опроса кнопки включения, мс (защита от "дребезжания" контакта)
-int RunButtonWait=1000;		// Длительность ожидания для подсчета количества нажатий (отсчитывается с перовго нажатия), нужное действие включается не мгновенно, а только после конца периода
+// Time delays
+int SensorsPause=1000;				// Частота опроса датчиков, мс
+int RunButtonPause=100;				// Power button polling frequency, ms (protection against contact “rattling”)
+int RunButtonWait=1000;				// Waiting duration for counting the number of clicks (counted from the first click), the desired action is not activated instantly, but only after the end of the period
 
 // Варианты отобраения значений
-bool ValvesConsole=false;		// Вывод положения клапанов в консоль
-bool ValvesDisplay=false;		// Вывод положения клапанов на дисплей
-bool SensorsConsole=false;		// Вывод показаний датчиков в консоль
-bool SensorsDisplay=false;		// Вывод показаний датчиков на дисплей
+bool ValvesConsole=false;		// Displaying valve positions in the console
+bool ValvesDisplay=false;		// Displaying valve positions on display
+bool SensorsConsole=false;		// Displaying sensors readings  in the console
+bool SensorsDisplay=false;		// Displaying sensors readings  on display
 
 
-// Используемые таймеры
-unsigned long MainTimer=0;	// Таймер работы циклограммы
-unsigned long RunButtonTimer=0;	// Таймер нажатия кнопки включения
-unsigned long RunButtonWaitTimer=0;	// Таймер ожидания ддля подсчетов нажатия кнопки включения
+// Timers used
+unsigned long MainTimer=0;			// Cyclogram operation timer
+unsigned long RunButtonTimer=0;		// "Run" button press timer
+unsigned long RunButtonWaitTimer=0;	// Wait timer for counting when the "Run" button is pressed
+unsigned long SensorsTimer=0;		// Sensor polling timer
 
-unsigned long SensorsTimer=0;	// Таймер опроса датчиков
-
-bool RunButtonState1=true;		// Значение кнопки включения
-bool RunButtonState2=true;		// Значение кнопки включения
-bool ModeRunning=false;			// Режим работы
-bool RunButtonWaiting=false;	// ожидания для подсчета количества нажатий после перовго нажатия
-byte RunButtonClicks=0;			// Количество нажатий
+bool RunButtonState1=true;		// "Run" button position
+bool RunButtonState2=true;		// "Run" button previous position
+bool ModeRunning=false;			// Mode
+bool RunButtonWaiting=false;	// waiting to count the number of "Run" button clicks after the first click
+byte RunButtonClicks=0;			// number of "Run" button clicks
 
 				
-void ValveStatus()	// Отобраение положения клапанов в консоли
+void ValveStatus()				// Displaying valve positions in the console
 {
-	if (ValvesConsole)		// Если включен вывод в косноль
+	if (ValvesConsole)			// If console output is enabled
 		{
 			Serial.print("T=");
 			Serial.print(millis()-MainTimer);
@@ -105,22 +113,27 @@ void ValveStatus()	// Отобраение положения клапанов �
 			}
 			Serial.println("]");	
 		}		
-		if (ValvesDisplay)		// Если включен вывод на дисплей
-		{
-			// Место для кода вывода положения клапанов на экран
+		if (ValvesDisplay)		// If display output is enabled
+		{	
+			//
+			//	
+			// 		Place for code to display valve position on screen
+			//
+			//
+			//
 		}
 	
 }
 
 
-void SensorsRead()	// Опрос датчиков
+void SensorsRead()	// Sensor polling
 {
 	for (byte SensorsCount=0; SensorsCount<SensorsNumber; SensorsCount++)
 	{
-		// Перевод значений напряжения на пине (0..5 Вольт) в реальные показания
+		// Converting voltage values on the pin (0..5 Volts) into real readings
 		SensorValue[SensorsCount]=analogRead(SENSORS[SensorsCount])*SensorRatio[SensorsCount]/1024;
 		
-		if (SensorsConsole)		// Если включен вывод значений датчиков в консоль
+		if (SensorsConsole)		// If output of sensor values to the console is enabled
 		{
 			Serial.print("[Sensor");
 			Serial.print(SensorsCount+1);
@@ -128,18 +141,25 @@ void SensorsRead()	// Опрос датчиков
 			Serial.print(SensorValue[SensorsCount]);
 			Serial.print("]");	
 		}		
-		if (SensorsDisplay)		// Если включен вывод значений датчиков на дисплей
+		if (SensorsDisplay)		// If displaying sensor values on display is enabled
 		{
-			// Место для кода вывода значений датчиков на дисплей
+			//
+			//
+			//
+			// Place for code to display sensor values on screen
+			//
+			//
+			//
+			
 		}
 	}
 	if (SensorsConsole) Serial.println("");
-	if (SensorIntoImpulse)		// Если включена зависимость импульса от аналогового входа
+	if (SensorIntoImpulse)		// If pulse dependence on analog input is enabled
 	{
-		// Меняем длительность импульса:
+		// Scaling the pulse duration:
 		ValveImpulse[SensorIntoImpulse_Number].Time=SensorValue[SensorIntoImpulse_Input]*SensorIntoImpulseX;	
 		
-		// Меняем паузу между импульсами:	
+		// Scaling pause between the pulses:
 		ValveImpulse[SensorIntoImpulse_Number].Pause=SensorValue[SensorIntoImpulse_Input]*SensorIntoImpulseX;	
 		
 		if (SensorsConsole)
@@ -153,47 +173,45 @@ void SensorsRead()	// Опрос датчиков
 }
 
 void setup() {
-	Serial.begin(9600);		// Отладка по серийному порту - скорость 9600
-	// Конфигурируем пины клапанов и индикаторов как выходы
+	Serial.begin(9600);		// Serial port debugging - speed 9600
+	// Configuring valve and indicator pins as outputs
 	for (byte i=0; i<ImpulseTypes; i++)
 	{
-		pinMode(ValveImpulse[i].ValvePin, OUTPUT);    	 // Контакт управления 1 клапаном как выход
+		pinMode(ValveImpulse[i].ValvePin, OUTPUT);    	 // Each valve control pin as output
 	}
-	// Конфигурируем пины датчиков и кнопок как входы
+	// Configuring pins of sensors and buttons as inputs
 	for (byte SensorsCount=0; SensorsCount<SensorsNumber; SensorsCount++)
 	{
-		pinMode(SENSORS[SensorsCount], INPUT);    	 // Контакт управления 1 клапаном как выход
+		pinMode(SENSORS[SensorsCount], INPUT);    	 
 	}
-	pinMode(WORKING, OUTPUT);    	 // Индикация работы как выход
-	
-
-	pinMode(RUN, INPUT);   	 		 // Контакт подключения кнопки как вход
-	digitalWrite(RUN,HIGH);          //Включаем внутренний pull-up резистор для кнопки. Нажатие кнопки долно замыкать контакт на "землю"
+	pinMode(WORKING, OUTPUT);    	 // Working indicator as output
+	pinMode(RUN, INPUT);   	 		 // "Run" button as input 
+	digitalWrite(RUN,HIGH);          // Turn on the internal pull-up resistor for the button. Pressing the button must close the contact to ground
 	digitalWrite(WORKING,LOW);
-	Serial.println("Initialization - OK");	// Сообщение что все инициализировалось нормально
-	SensorsRead();		// Опрашиваем датчики первый раз
-	ValveStatus();		// Отображаем текущее полоение клапанов
+	Serial.println("Initialization - OK");	// Initializatoin finish message
+	SensorsRead();		// Querying sensors 
+	ValveStatus();		// Show current status 
 }
 
 bool Impulse1switchImpulse4=true; 
-void RunButtonFunctions(byte clicks)	//действия в зависимости от количества нажатий
+void RunButtonFunctions(byte clicks)	// "Run" button actions
 {
 	switch (clicks)
 	{
-	case 1:		// Для одного нажатия
+	case 1:		// One click
 		Serial.println("Clicks - 1");
-		ModeRunning=!ModeRunning;	// Включаем/выключаем рабочий режим 
+		ModeRunning=!ModeRunning;	// Turn on/off main operating mode
 			if (ModeRunning) 
 			{
 				Serial.println("RUN"); 
 				cycleCount = 0;
 				cycleMillis = millis();
-				MainTimer=millis(); 	// Запуск основного таймера циклограммы
+				MainTimer=millis(); 	//Starting the main sequence timer
 				digitalWrite(WORKING,HIGH);
-				// Запускаем все последовательности импульсов
+				// Launch all pulse sequences
 				for (byte i=0; i<ImpulseTypes; i++)
 					{
-						ValveImpulse[i].Begin();    	 // Запускаем последовательности импульсов
+						ValveImpulse[i].Begin();    	 // Launch each pulse sequences from query
 					} 
 				
 			}
@@ -201,49 +219,53 @@ void RunButtonFunctions(byte clicks)	//действия в зависимост�
 			{
 				digitalWrite(WORKING,LOW);
 				Serial.println("STOP after ");
-				//Serial.println(cycleCount);
 				Serial.println(millis( )- cycleMillis);
 				for (byte i=0; i<ImpulseTypes; i++)
 					{
-						ValveImpulse[i].Stop();    	 // Останавливаем все последовательности импульсов
+						ValveImpulse[i].Stop();    	 // Stop all pulse sequences
 					} 
 				MainTimer=0;
 			}
 	break;
-	case 2:		// Действия для двух нажатий
-		// вклюение и выключение прпорциональной зависимости длительности импульсов первого клапана от значений на аналоговом входе 
+	case 2:		// Action for two clicks
+		// turning on and off the proportional dependence of the pulse duration of the first valve on the values ​​at the analog input 
 		if (!SensorIntoImpulse)
 		{
 			
-			// Сохранем исходные значения
+			// save the original values
 			ImpulseTimeByDefault=ValveImpulse[SensorIntoImpulse_Number].Time;
 			ImpulsePauseByDefault=ValveImpulse[SensorIntoImpulse_Number].Pause;
 			Serial.println("Sensor value change impulse - ON");
-			SensorIntoImpulse=true;		// Включаем зависимость импульса от аналоговго входа
+			SensorIntoImpulse=true;		// Enable the pulse dependence on the analog input
 		}
 		else
 		{
-			// Возвращаем исходные значения
+			// Return initial values
 			ValveImpulse[SensorIntoImpulse_Number].Time=ImpulseTimeByDefault;
 			ValveImpulse[SensorIntoImpulse_Number].Pause=ImpulsePauseByDefault;
 			Serial.println("Sensor value change impulse - OFF");
-			SensorIntoImpulse=false; 		// Выключаем зависимость импульса от аналоговго входа
+			SensorIntoImpulse=false; 		// Disable the pulse dependence on the analog input
 		}
-		
-		//Serial.println("Clicks - 2");
+
 	break;
-	case 3:		// Действия для трех нажатий
+	case 3:		// Action for three "Run" button clicks
 	
 		Serial.println("Clicks - 3");
+				//
+				// reserved for action for three "Run" button clicks
+				//
 	break;
-	case 4:		// Для четырех четырех нажатий
+	case 4:		// Action for four "Run" button clicks
 		
 		Serial.println("Clicks - 4");
+				//
+				// reserved for action for four "Run" button clicks
+				//
 	break;
 	}
 }
 void loop() {
-	// Опрашиваем сенсоры каждые SensorsPause мс
+	// poll sensors every SensorsPause ms
 	if ((millis()-SensorsTimer)>SensorsPause)
 	{
 		SensorsTimer=millis();
@@ -251,36 +273,39 @@ void loop() {
 		
 	}
 	
-	// Пример управление клапанами в зависимости от датчиков
-	if (SensorValue[0]>100)	// Если показания 1 датчика больше 100 
+	// Example of valve control depending on sensors
+	// ------------------------------------------------
+	
+	if (SensorValue[0]>100)	// If the readings of 1 sensor are more than 100
 	{
-		//ValveImpulse[3].Stop();		// Остановить последовательность №3 
+		ValveImpulse[3].Stop();		// Stop pulse sequence #3
 	}
-	// Пример управление клапанами в зависимости от предыдущих датчиков
-	if ((ValveImpulse[1].Finished)&&(Impulse1switchImpulse4))	// Если 1 последовательность завершена
+	// Example of valve control depending on previous sensors
+	if ((ValveImpulse[1].Finished)&&(Impulse1switchImpulse4))	// If  pulse sequence #1 is completed
 	{
 		Impulse1switchImpulse4=false;
-		//ValveImpulse[0].Begin();		// запустить последовательность №0
+		ValveImpulse[0].Begin();		// Run  pulse sequence #2 
 
 	}
 	
-	//Опрашиваем кнопку включения каждые RunButtonPause мс 
+	// ---------------------------------------------------
+	// poll the power button every RunButtonPause ms 
 	if ((millis()-RunButtonTimer)>RunButtonPause)
 	{
 		RunButtonState1=RunButtonState2;
 		RunButtonState2=digitalRead(RUN);
 		RunButtonTimer=millis();
-		if ((RunButtonState1)&&(!RunButtonState2)) 	// Если кнопка поменяла состояние на нажатое   
+		if ((RunButtonState1)&&(!RunButtonState2)) 	//If the button changes state to pressed
 		{
 			if (!RunButtonWaiting)
 			{
-				RunButtonWaiting=true;			// начинаем подсчет нажатий
-				RunButtonWaitTimer=millis();	// запускаем таймер ожидания
-				RunButtonClicks++;				// добавляем нажатие
+				RunButtonWaiting=true;			// start counting the clicks
+				RunButtonWaitTimer=millis();	// start click waiting timer
+				RunButtonClicks++;				// increment click counter
 			}
 			else
 			{
-				RunButtonClicks++;				// добавляем нажатие
+				RunButtonClicks++;				// increment click counter
 			}
 		}
 	}
@@ -291,23 +316,22 @@ void loop() {
 		RunButtonWaiting=false;
 		RunButtonWaitTimer=0;
 	}
-	if (ModeRunning) // Рабочий режим
+	if (ModeRunning) // Main operational mode
 	{
 		cycleCount++;
 		for (byte i=0; i<ImpulseTypes; i++)
 		{
-			ValveImpulse[i].Update();    	 // Обрабатываем все последовтельности
+			ValveImpulse[i].Update();    	 // Processing all sequences
 		}
-		if ((millis( )- cycleMillis)>maxCyclesDurations) // Провереям, не истек ли таймер
+		if ((millis( )- cycleMillis)>maxCyclesDurations) // Check if the maximum test duration timer has expired
 		{
 			ModeRunning=false;
 			digitalWrite(WORKING,LOW);
 			Serial.println("STOP by timeout after ");
-			//Serial.println(cycleCount);
 			Serial.println(millis( )- cycleMillis);
 			for (byte i=0; i<ImpulseTypes; i++)
 				{
-					ValveImpulse[i].Stop();    	 // Останавливаем все последовательности импульсов
+					ValveImpulse[i].Stop();    	 // Stop all pulse sequences
 				} 
 			MainTimer=0;
 		}
