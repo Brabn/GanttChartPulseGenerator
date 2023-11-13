@@ -17,8 +17,8 @@ void ValveStatus(); // Valve status display function
 // (Number of PIN, 	delay before start in ms,	pulse duration in ms,	pause between pulses in ms, 	quantity of pulses) 	
 Impulse ValveImpulse[]={
 				// Example test ptogram (testing the vehicle fuel system on a stand)
-	           // Valve 1 - air cylinder. Pulses are supplied to 2 pins, start 10080ms after run, 1000ms pulse length, 1000ms pause between pulses, 100 pulses
- 				Impulse(2,10080,1000,1000,100),
+	           // Valve 1 - air cylinder. Pulses are supplied to 2 pins, start 10080ms after run, 1000ms pulse length, 500ms pause between pulses, 10 pulses
+ 				Impulse(2,10080,1000,500,10),
 
 				// Benchmark pulse sequence 2
 				// Pulses are supplied to 3rd pin, start 4000 ms after run, 20ms pulse length, 300ms pause between pulses, 150 pulses
@@ -26,10 +26,10 @@ Impulse ValveImpulse[]={
  				Impulse(3,4000,20,300,150),
 
 				// Blowing process
-				// Pulses are supplied to 4rd pin, start 1300 ms after run, 6ms pulse length, 0ms pause between pulses, 1 pulse
-				// Pulses are supplied to 4rd pin, start 65000 ms after run, 6ms pulse length, 0ms pause between pulses, 1 pulse
-				Impulse(4,1300,6,0,1),
-				Impulse(4,65000,6,0,1),
+				// Pulses are supplied to 4rd pin, start 1300 ms after run, 100ms pulse length, 0ms pause between pulses, 1 pulse
+				// Pulses are supplied to 4rd pin, start 65000 ms after run, 100ms pulse length, 0ms pause between pulses, 1 pulse
+				Impulse(4,1300,100,0,1),
+				Impulse(4,65000,100,0,1),
 				
 				//Pressure release
 				// Pulses are supplied to 5th pin, start 10 ms after run, 3000ms pulse length, 0ms pause between pulses, 1 pulse
@@ -285,7 +285,6 @@ void loop() {
 	{
 		Impulse1switchImpulse4=false;
 		ValveImpulse[0].Begin();		// Run  pulse sequence #2 
-
 	}
 	
 	// ---------------------------------------------------
