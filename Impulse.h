@@ -1,11 +1,14 @@
 class Impulse
 {
 	public:
-		int ValvePin;
+		byte ValvePin;
 		unsigned long Start;		// Turn-on delay after start, ms
 		unsigned long Time;			// Pulse duration, ms
 		unsigned long Pause;		// Delay between pulses, ms
-		int Number;					// Pulse number
+		unsigned int Number;					// Pulse number
+		byte TriggerPulse;			// Number of previous pulse sequence to start current pulse sequence
+		byte TriggerSensor;			// Number of sensor which trigger start of pulse sequence
+		byte TriggerLimit;    //Limit of triggering pulse sequence by sensor value
 		int Count;					// Pulse counter
 		bool Need=false;			// Are valve impulses required?
 		bool Impulsing=false;		// Pulse mode 
@@ -24,14 +27,20 @@ class Impulse
 		Pause=0;					// Delay between pulses, ms
 		Number=0;					// Pulse number
 		Count=0;					// Pulse counter
+    TriggerPulse=-1;
+    TriggerSensor=-1;
+    TriggerLimit=820;
 	}
-	Impulse(int _ValvePin, unsigned long  _Start, unsigned long  _Time,unsigned long  _Pause, int _Number)
+	Impulse(byte _ValvePin, unsigned long  _Start, unsigned long  _Time,unsigned long  _Pause=0, int _Number=1, byte _TriggerPulse=-1, byte _TriggerSensor=-1, byte _TriggerLimit=820)
 	{
 		ValvePin=_ValvePin;			// control pin
-		Start=_Start*1000;			// delay after start, µs
-		Time=_Time*1000;			// Pulse duration, µs
-		Pause=_Pause*1000;			// Delay between pulses, µs
+		Start=_Start*1000;			// delay after start, пїЅs
+		Time=_Time*1000;			// Pulse duration, пїЅs
+		Pause=_Pause*1000;			// Delay between pulses, пїЅs
 		Number=_Number;				// Pulse number
+		TriggerPulse=_TriggerPulse;	// Number of previous pulse sequence to start current pulse sequence
+		TriggerSensor=_TriggerSensor;		// Number of sensor which trigger start of pulse sequence
+    TriggerLimit=_TriggerLimit;   // Sensor value to triger sequence: 1024=5V 820=4V
 		Count=0;					// Pulse counter
 	};
 	void Begin()					//Start counting the pulse sequence
@@ -53,20 +62,19 @@ class Impulse
 	};
 	void Update()
 	{
-		if (Need)	// Is it necessary to pulse 2nd valves?
+		if (Need)	// Is it necessary to pulse ?
 		{
 			if (!Impulsing)
 			if (((micros()/1-CurrTimer))>Start)
 			{
 				Impulsing=true; 		// We switch to the pulse output mode
 				CurrTimer=micros()/1;	// We start the pulse timer 
-				On=true;				// 2nd pulse timer mode
+				On=true;				// pulse timer mode
 				State=true;				// Turn on valve
 				digitalWrite(ValvePin,StateOn);		//  pin state changing
 				ValveStatus();			// Display the current position of the valves
-				
 			}
-			if (On) 	//In the pulse mode of the 2nd timer, wait for the end of the pulse
+			if (On) 	//In the pulse mode of the timer, wait for the end of the pulse
 			if 	((((micros()/1-CurrTimer))>Time)&&(Time>0))	//If the pulse time has expired
 			{
 				On=false;
@@ -89,7 +97,7 @@ class Impulse
 			}
 			if (Count>=(Number))		// if pulse sequnece ended
 			{
-				// Обнуляем все режимы
+				// пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ
 				On=false;
 				Off=false;
 				Need=false;
@@ -97,7 +105,6 @@ class Impulse
 				Finished=true;  
 				digitalWrite(ValvePin,StateOff); 
 				ValveStatus();			
-
 			} 
 			
 		}
