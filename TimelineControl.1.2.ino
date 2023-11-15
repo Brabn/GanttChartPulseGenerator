@@ -10,6 +10,7 @@
 void ValveStatus(); // Valve status display function
 
 #include "Impulse.h"	// Pulse control library
+#include "SensorScaler.h"	// Sensor scaler control library
 
 
 // Determine the required valve pulse sequences according Gantt chart
@@ -54,10 +55,28 @@ Impulse ValveImpulse[]={
 				// Pulses are supplied to 6th pin, 7000ms pulse length, 0ms pause between pulses, 1 pulse. Triggered by sensor #1 value more than 2.5V (5V*1024/512) 	
 				Impulse(6,	10,		7000,	0,		1,	-1,	1,	512),
 				};
+				
+SensorScaler Scaler[]={	
+	
+				SensorScaler(3,	3, -1,	0, 0, 0, 3.33,	3.33)
+				// scale pulse #3 by sensor #3 - no influence to delay, Pulse duration =100ms for sensor=0, Pulse pause = 300ms for sensor =0, no pulse delay scaling, scale pulse duration in three times when sensor value changed from 0 to 5V, scale pulse pause in three times when sensor value chnged from 0 to 5V
+				
+				// For default Impulse duration 100ms 
+				// 1.5V -> 0+1.5/5*3.33*100=100ms
+				// 3.0V -> 0+3.0/5*3.33*100=200ms
+				// 4.5V -> 0+4.5/5*3.33*100=300ms	
+				// 5.0V -> 0+5.0/5*3.33*100=330ms
+				
+				// For default Impulse pause 300ms 
+				// 1.5V -> 0+1.5/5*3.33*300=300ms
+				// 3.0V -> 0+3.0/5*3.33*300=600ms
+				// 4.5V -> 0+4.5/5*3.33*300=900ms	
+				// 5.0V -> 0+5.0/5*3.33*300=990ms
+				};
 const byte ImpulseTypes=sizeof(ValveImpulse)/sizeof(Impulse);  //Number of pulse sequences
 
 unsigned long maxCyclesDurations=200000; // Maximum duration of all cycles, in ms. If exceeded - stop
-
+byte SensorTriggeringLimit=820;    // Default Limit of triggering pulse sequence by sensor value
 
 unsigned long cycleCount = 0;	
 unsigned long cycleMillis = 0;	
@@ -66,13 +85,15 @@ const byte SensorsNumber=3;	// Number of sensors
 
 // Designation of the pins for connecting the sensors (the range of 0..5 Volts corresponds to readings of 0..1024)
 byte SENSORS[]={A0, A1, A2}; 			//Connecting sensors - pins A0, A1, A2
-double SensorRatio[]= {10,100,100}; 	//Coefficients for converting sensor values (0..5 Volts) into real values
+double SensorRatio[]= {10,100,100}; 	//Coefficients for converting sensor values (0..5 Volts) into real values							
 										//A value of 100 corresponds to SensorValue=100 when 5 volts are applied, 66 when 3.3V is applied, etc.
 double SensorValue[]= {0,0,0}; 			//Current sensor readings
-byte SensorTriggeringLimit=820;    // Default Limit of triggering pulse sequence by sensor value
+
 bool SensorIntoImpulse=false;			// mode for influencing the sensor value on the pulse duration, disabled by default
 byte SensorIntoImpulse_Input=0;			// Which analog input will control
 byte SensorIntoImpulse_Number=0;		// Which of the impulses will be controlled
+
+
 int ImpulseTimeByDefault=50000;   		// Default pulse duration (unless sensor dependent)
 int ImpulsePauseByDefault=50000;  		// Default pause between pulses (unless sensor dependent)
 double SensorIntoImpulseX=15000; 		// Coefficient of influence of the sensor value on the pulse duration
