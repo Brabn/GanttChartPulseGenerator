@@ -15,7 +15,7 @@ void ValveStatus(); // Valve status display function
 
 // Determine the required valve pulse sequences according Gantt chart
 // For pulses in units of ms, it is advisable to disable output to the console (otherwise it may cause delays)
-// (Number of PIN, 	delay before start in ms,	pulse duration in ms,	pause between pulses in ms, 	quantity of pulses) 	
+// (Number of PIN, 	delay before start in ms,	pulse duration in ms,	pause between pulses in ms, 	quantity of pulses, Number of previous pulse sequence to start current pulse sequence, Number of sensor which trigger start of pulse sequence, Limit of triggering pulse sequence by sensor value) 	
 Impulse ValveImpulse[]={
 				// Example test ptogram (testing the vehicle fuel system on a stand)
 				// Blowing process
@@ -57,8 +57,8 @@ Impulse ValveImpulse[]={
 				};
 				
 SensorScaler Scaler[]={	
-	
-				SensorScaler(3,	3, -1,	0, 0, 0, 3.33,	3.33)
+				//(Which sensor will control pulse, Which pulse will be controlled, Which pulse delay corresponds to sensor value =0, Which pulse duration corresponds to sensor value =0, Which delay between pulses corresponds to sensor value=0, Scaling factor for delay value, Scaling factor for pulse duration, 
+				SensorScaler(3,	3, 0, 3.33,	3.33, -1,	0, 0)
 				// scale pulse #3 by sensor #3 - no influence to delay, Pulse duration =100ms for sensor=0, Pulse pause = 300ms for sensor =0, no pulse delay scaling, scale pulse duration in three times when sensor value changed from 0 to 5V, scale pulse pause in three times when sensor value chnged from 0 to 5V
 				
 				// For default Impulse duration 100ms 
@@ -68,7 +68,7 @@ SensorScaler Scaler[]={
 				// 5.0V -> 0+5.0/5*3.33*100=330ms
 				
 				// For default Impulse pause 300ms 
-				// 1.5V -> 0+1.5/5*3.33*300=300ms
+				// 1.5V -> 0+1.5/5*3.33*300=30
 				// 3.0V -> 0+3.0/5*3.33*300=600ms
 				// 4.5V -> 0+4.5/5*3.33*300=900ms	
 				// 5.0V -> 0+5.0/5*3.33*300=990ms
