@@ -129,12 +129,10 @@ Here:
 > A value of -1 for the `ZeroPulseDelay`, `ZeroPulseTime` or `ZeroPulsePause` parameters will not additionally set the parameter value to 0, i.e. only the original value of the parameter will be taken into account.
 
 For example, following combination of commands:
-
 ```
-Impulse(3, 0, 100, 300, 100)`
+Impulse(3, 0, 100, 300, 100)
 SensorScaler(3, 3, 0, 3.33,	3.33, 1, 0, 0)
 ```
-
 will generate a series of pulses on pin D3, the parameters of which will correspond to the voltage on pin A3. For a voltage of 1.5 V – pulse length is 100 ms with a pause of 300 ms, for a voltage of 4.5 V – 300 ms and 900 ms, respectively
  
 ![Example of pulse frequency control depending on sensor readings](/Pictures/GanttChartPulseGenerator.PulseFreqenceBySensorValue.jpg)
