@@ -1,4 +1,4 @@
-# GanttChartPulseGenerator
+# Gantt Chart Pulse Generator
 
 Pulse generation system according to the configuration specified by the Gantt chart.
 
