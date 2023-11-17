@@ -42,6 +42,7 @@ Here:
 
 ### Formation of a single impulse:
 
+For example
 `Impulse(2,1300,100)`
 
 command will generate one 6ms long pulse on pin #4 1.3 seconds after the "Run" command.
@@ -50,6 +51,7 @@ command will generate one 6ms long pulse on pin #4 1.3 seconds after the "Run" c
 
 ### Formation of repeating pulses sequence:
 
+For example
 `Impulse(2,10000,1000,500,10)` 
 
 command will generate a sequence of 10 pulses on pin #2, the duration of each pulse is 1 second, the pause between pulses is 0.5 seconds. In this case, the sequence starts 10 seconds after the start command. 
@@ -59,10 +61,9 @@ command will generate a sequence of 10 pulses on pin #2, the duration of each pu
 ### A sequence of pulses in which the beginning of one pulse depends on the completion of the previous pulse:
 
 To create a dependency, optional TriggerPulse parameter need to be specified. It indicates the serial number of the sequence, the end of which will serve as the beginning of the current one.
-For example
 
+For example
 `Impulse(3,4000,100,300,15,2)`
- 
 command will generate on pin #3 a sequence of 15 pulses 100 ms long with a pause between pulses of 300 ms. Sequence starts 4 seconds after sequence #2 ends
 
 ![Example of pulse sequence initiated by completion of the previous pulse sequence](/Pictures/GanttChartPulseGenerator.PulseTriggeredBySensor.jpg)
@@ -99,21 +100,24 @@ To create a dependency, object of type `SensorScaler` need to be added
 The following structure is used for this:
 
 `(SensorNumber, TargetPulseNumber, ZeroPulseDelay, ZeroPulseTime, ZeroPulsePause, StartScaling, TimeScaling,PauseScaling)`
-Here:	`SensorNumber`	– Number of the sensor that will change the pulse;
 
-	`TargetPulseNumber` – Number of the pulse sequence to be controlled;
+Here:
+
+`SensorNumber`	– Number of the sensor that will change the pulse;
+
+`TargetPulseNumber` – Number of the pulse sequence to be controlled;
 	
-	`StartScaling` – The coefficient by which the delay before the start of the pulse sequence will increase;
+`StartScaling` – The coefficient by which the delay before the start of the pulse sequence will increase;
 	
-	`TimeScaling` – The coefficient by which the pulse duration will increase;
+`TimeScaling` – The coefficient by which the pulse duration will increase;
 	
-	`PauseScaling` – The coefficient by which the pause between pulses will increase;
+`PauseScaling` – The coefficient by which the pause between pulses will increase;
 	
-	`ZeroPulseDelay`	– Delay before the start of pulses which corresponds to the readings of the 0V sensor (optional, by default `ZeroPulseDelay =-1`);
+`ZeroPulseDelay`	– Delay before the start of pulses which corresponds to the readings of the 0V sensor (optional, by default `ZeroPulseDelay =-1`);
 	
-	`ZeroPulseTime` – Pulse duration that corresponds to the 0V sensor readings. (optional, by default `ZeroPulseTime =-1`);
+`ZeroPulseTime` – Pulse duration that corresponds to the 0V sensor readings. (optional, by default `ZeroPulseTime =-1`);
 	
-	`ZeroPulsePause` – Pulse pause that corresponds to the 0V sensor readings. (optional, by default `ZeroPulsePause =-1`);
+`ZeroPulsePause` – Pulse pause that corresponds to the 0V sensor readings. (optional, by default `ZeroPulsePause =-1`);
 	
 > [!NOTE]  
 > The values of the scaling factors `StartScaling`, `TimeScaling`, `PauseScaling` correspond to how many times the initial value will change when the voltage from the sensor is 5V. For example, a factor of 2 will double the initial value of the parameter at a voltage of 5V, and increase it by only 20% at a voltage of 0.5V. A negative coefficient will decrease the parameter relative to the original value. For example, for `TimeScaling=-1` at a voltage of 2.5V the parameter value will be 50% of the original, at a voltage of 0.5V – 10% of the original
@@ -126,8 +130,10 @@ Here:	`SensorNumber`	– Number of the sensor that will change the pulse;
 
 For example, following combination of commands:
 
-`Impulse(3, 0, 100, 300, 100)`
-`SensorScaler(3, 3, 0, 3.33,	3.33, 1, 0, 0)`
+```
+Impulse(3, 0, 100, 300, 100)`
+SensorScaler(3, 3, 0, 3.33,	3.33, 1, 0, 0)
+```
 
 will generate a series of pulses on pin D3, the parameters of which will correspond to the voltage on pin A3. For a voltage of 1.5 V – pulse length is 100 ms with a pause of 300 ms, for a voltage of 4.5 V – 300 ms and 900 ms, respectively
  
