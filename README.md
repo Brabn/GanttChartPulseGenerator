@@ -19,21 +19,21 @@ The following structure is used for this:
 
 Here:
 
-	`ValvePin`		– number of the controller pin to which the pulse will be generated;
+`ValvePin`		– number of the controller pin to which the pulse will be generated;
 	
-	`Start` 		– pulse turn-on delay after start, ms;
+`Start` 		– pulse turn-on delay after start, ms;
 	
-	`Time`			– Pulse duration, ms;
+`Time`			– Pulse duration, ms;
 	
-	`Pause`			– Delay between pulses, ms (optional parameter, by default `Pause=0`);
+`Pause`			– Delay between pulses, ms (optional parameter, by default `Pause=0`);
 	
-	`Number`		– Number of pulses (optional parameter, by default `Number=1`);
+`Number`		– Number of pulses (optional parameter, by default `Number=1`);
 	
-	`TriggerPulse` 	– The number of the previous sequence, the completion of which will trigger the start of the current sequence. (optional parameter, by default `TriggerPulse =-1`);
+`TriggerPulse` 	– The number of the previous sequence, the completion of which will trigger the start of the current sequence. (optional parameter, by default `TriggerPulse =-1`);
 	
-	`TriggerSensor` 	– Number of sensor which trigger start of pulse sequence (optional parameter, by default `TriggerSensor=-1`);
+`TriggerSensor` 	– Number of sensor which trigger start of pulse sequence (optional parameter, by default `TriggerSensor=-1`);
 	
-	`TriggerLimit` 	– value from the sensor, the excess of which will trigger the start of the current sequence. Indicated in the range from 0 to 1024, which corresponds to the voltage on the corresponding pin from 0 to 5V in steps of 0.005V (Optional parameter, by default `TriggerLimit=615`, which corresponds to triggering at a voltage above 3V);
+`TriggerLimit` 	– value from the sensor, the excess of which will trigger the start of the current sequence. Indicated in the range from 0 to 1024, which corresponds to the voltage on the corresponding pin from 0 to 5V in steps of 0.005V (Optional parameter, by default `TriggerLimit=615`, which corresponds to triggering at a voltage above 3V);
 
 > [!NOTE]  
 > If the last three optional parameters are not specified, then the pulse delay will be counted from the beginning of the operating mode (pressing the “Start” button)
