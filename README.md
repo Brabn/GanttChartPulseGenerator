@@ -42,18 +42,16 @@ Here:
 
 ### Formation of a single impulse:
 
-For example
+For example 
 `Impulse(2,1300,100)`
-
 command will generate one 6ms long pulse on pin #4 1.3 seconds after the "Run" command.
 
 ![Example of single impulse pulse sequence](/Pictures/GanttChartPulseGenerator.SinglePulse.jpg)
 
 ### Formation of repeating pulses sequence:
 
-For example
+For example 
 `Impulse(2,10000,1000,500,10)` 
-
 command will generate a sequence of 10 pulses on pin #2, the duration of each pulse is 1 second, the pause between pulses is 0.5 seconds. In this case, the sequence starts 10 seconds after the start command. 
 
 ![Example of repeating pulses sequence](/Pictures/GanttChartPulseGenerator.SeveralPulses.jpg)
@@ -62,7 +60,7 @@ command will generate a sequence of 10 pulses on pin #2, the duration of each pu
 
 To create a dependency, optional TriggerPulse parameter need to be specified. It indicates the serial number of the sequence, the end of which will serve as the beginning of the current one.
 
-For example
+For example 
 `Impulse(3,4000,100,300,15,2)`
 command will generate on pin #3 a sequence of 15 pulses 100 ms long with a pause between pulses of 300 ms. Sequence starts 4 seconds after sequence #2 ends
 
@@ -73,20 +71,16 @@ command will generate on pin #3 a sequence of 15 pulses 100 ms long with a pause
 To create a dependency of sequence from the sensor, the optional TriggerSensor parameter need to be specified, It indicates number of sensor which trigger start of pulse sequence
 By default, the response threshold is set to 3V (threshold for transition from logical zero to logical 1)
 
-For example
-
+For example 
 `Impulse(5,0,7000,0,1,-1,0)`
-
 command will generate one 7-second pulse on pin #3, which will begin at the moment when a voltage greater than 3V arrives from sensor #0.
 
 ![Example of pulse sequence initiated by sensor readings logic value](/Pictures/GanttChartPulseGenerator.PulseTriggeredBySensor.jpg)
 
 If necessary, trigger can be set to any voltage within the measurement limits; for this, after the TriggerPulse parameter, you must also set the `TriggerLimit` parameter. The value can be in the range from 0 to 1024, which will correspond to a response voltage from 0 to 5V in steps of 0.005V.
 
-For example
-
+For example 
 `Impulse(6, 1500, 2000, 500, 2,1,1, 920)`
-
 command will create a sequence of 2 pulses with a length of 2000 ms and a pause between pulses of 500 ms. The sequence begins 1.5 s after sensor #1 receives a voltage greater than 4.5 V
  
 ![Example of pulse sequence initiated by sensor readings analog value](/Pictures/GanttChartPulseGenerator.PulseTriggeredBySensorValue.jpg)
